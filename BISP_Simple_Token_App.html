@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#173b2d">
+<title>Beneficiary Token & Survey Register</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#17231d;background:#f3f6f4}
+*{box-sizing:border-box}body{margin:0}header{background:#173b2d;color:#fff;padding:18px 16px}
+header h1{font-size:1.2rem;margin:0 0 5px}header p{margin:0;font-size:.9rem;opacity:.9}
+main{max-width:1000px;margin:auto;padding:14px;display:grid;gap:14px}
+.card{background:white;border:1px solid #dce5df;border-radius:14px;padding:15px;box-shadow:0 2px 8px #173b2d0a}
+h2{font-size:1.05rem;margin:0 0 12px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+label{font-size:.82rem;font-weight:650;display:block;margin-bottom:5px}input,select,textarea,button{font:inherit;width:100%;border-radius:9px;border:1px solid #cbd7cf;padding:10px;background:white;color:#17231d}
+textarea{min-height:70px;resize:vertical}button{border:0;background:#1e6848;color:white;font-weight:700;cursor:pointer;margin-top:8px}
+button.secondary{background:#e7eee9;color:#173b2d}button.danger{background:#9f2d2d}button.small{width:auto;padding:6px 9px;margin:2px;font-size:.8rem}
+.help{color:#5d6b62;font-size:.82rem;line-height:1.45}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:#edf4ef;border-radius:10px;padding:12px}.stat strong{display:block;font-size:1.3rem}.stat span{font-size:.78rem;color:#526157}
+.actions{display:flex;flex-wrap:wrap;gap:8px}.actions button{width:auto;flex:1}
+.tablewrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:.84rem;min-width:760px}th,td{text-align:left;border-bottom:1px solid #e4eae6;padding:9px 7px;vertical-align:top}th{background:#f1f5f2}
+.notice{padding:10px;border-radius:9px;background:#fff6dc;color:#664c09;font-size:.82rem;margin-bottom:10px}
+#receipt{display:none}.muted{color:#607067}.badge{display:inline-block;background:#e5efe8;padding:3px 7px;border-radius:99px;font-size:.75rem}
+@media(max-width:600px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(3,1fr)}main{padding:10px}.card{padding:12px}}
+@media print{body{background:white}header,main,.no-print{display:none!important}#receipt{display:block!important;color:#000;width:58mm;font-family:monospace;font-size:10pt;padding:2mm}#receipt h2{text-align:center;font-size:12pt}#receipt .line{border-top:1px dashed #000;margin:6px 0}#receipt .qrwrap{display:flex;justify-content:center;margin:7px 0}#receipt .qrwrap img,#receipt .qrwrap canvas{max-width:30mm;height:auto!important}.qrnote{font-size:8pt;text-align:center}}
+</style>
+</head>
+<body>
+<header><h1>Beneficiary Token & Survey Register</h1><p>Offline-first local prototype · District Bahawalnagar</p></header>
+<main>
+<section class="card">
+<h2>Dashboard</h2>
+<div class="stats"><div class="stat"><strong id="total">0</strong><span>Total tokens</span></div><div class="stat"><strong id="today">0</strong><span>Issued today</span></div><div class="stat"><strong id="pending">0</strong><span>Pending / issued</span></div></div>
+<p class="help">Records stay in this browser on this device. Export a backup regularly. Clearing browser data or uninstalling the browser can erase records.</p>
+</section>
+<section class="card">
+<h2 id="formTitle">Issue New Token</h2>
+<div class="grid">
+<div><label for="cnic">CNIC (13 digits)</label><input id="cnic" inputmode="numeric" maxlength="15" placeholder="12345-1234567-1" autocomplete="off"></div>
+<div><label for="name">Beneficiary name</label><input id="name" placeholder="Full name"></div>
+<div><label for="tehsil">Tehsil</label><select id="tehsil"><option>Bahawalnagar</option><option>Chishtian</option><option>Fort Abbas</option><option>Haroonabad</option><option>Minchinabad</option></select></div>
+<div><label for="issuedDate">Token Issue Date</label><input id="issuedDate" type="date" autocomplete="off"><p class="help">Token jari karne ki tareekh calendar se select karein.</p></div>
+<div><label for="surveyDate">Date of Visit (optional)</label><input id="surveyDate" type="text" inputmode="numeric" autocomplete="off" placeholder="DD-MM-YYYY (khali chhor sakte hain)"><p id="dateHelp" class="help">Date of Visit DD-MM-YYYY format mein likhein, misal 05-11-2026. Khali bhi chhor sakte hain.</p></div>
+<div><label for="status">Status</label><select id="status"><option>Token Issued</option><option>Pending Survey</option><option>Survey Completed</option><option>Absent</option><option>Cancelled</option></select></div>
+<div><label for="remarks">Remarks</label><input id="remarks" placeholder="Optional remarks"></div>
+</div>
+<div class="actions"><button id="saveBtn">Save Token</button><button class="secondary" id="clearBtn">Clear Form</button></div>
+<p id="message" class="help" role="status"></p>
+<div class="notice">QR code banane ke liye pehli dafa internet par QR library load honi zaroori hai. Library load hone ke baad records aur QR lookup isi browser mein offline kaam kar sakte hain. Direct Bluetooth printing abhi printer model ke mutabiq Android integration mangti hai. Asli CNIC data sirf approved, secure app mein use karein.</div>
+</section>
+<section class="card">
+<h2>Search & Micro Data</h2>
+<div class="grid">
+<div><label for="search">Search by token, CNIC, name or remarks</label><input id="search" placeholder="Search records…"></div>
+<div><label for="filterTehsil">Filter by tehsil</label><select id="filterTehsil"><option value="">All tehsils</option><option>Bahawalnagar</option><option>Chishtian</option><option>Fort Abbas</option><option>Haroonabad</option><option>Minchinabad</option></select></div>
+</div>
+<div class="actions no-print"><button class="secondary" id="exportCsv">Export CSV</button><button class="secondary" id="backup">Backup JSON</button><button class="secondary" id="restoreBtn">Restore JSON backup</button><input id="restoreFile" type="file" accept=".json,application/json" hidden></div>
+<div class="grid no-print" style="margin:10px 0"><div><label for="qrLookup">QR se mila Token ID yahan paste karein</label><input id="qrLookup" placeholder="BN-YYYYMMDD-0001"></div><div style="align-self:end"><button id="lookupBtn">Token Lookup</button></div></div><p id="lookupResult" class="help"></p><div class="tablewrap"><table><thead><tr><th>Token ID</th><th>CNIC</th><th>Name</th><th>Tehsil</th><th>Date of Visit</th><th>Status</th><th>Remarks</th><th class="no-print">Actions</th></tr></thead><tbody id="records"></tbody></table></div>
+<p id="empty" class="help">No records yet. Add a token above to begin.</p>
+</section>
+</main>
+<div id="receipt"></div>
+<script>
+const $=id=>document.getElementById(id);
+const TEHSILS=["Bahawalnagar","Chishtian","Fort Abbas","Haroonabad","Minchinabad"];
+const DBKEY="bisp_beneficiary_tokens_v1";
+let records=[], editingId=null;
+const todayISO=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
+$("surveyDate").value="";
+function load(){try{records=JSON.parse(localStorage.getItem(DBKEY)||"[]");if(!Array.isArray(records))records=[]}catch{records=[]}render()}
+function persist(){localStorage.setItem(DBKEY,JSON.stringify(records));render()}
+function normCnic(v){return (v||"").replace(/\D/g,"")}
+function formatCnic(v){let n=normCnic(v).slice(0,13);return n.length>5?n.slice(0,5)+"-"+n.slice(5,12)+(n.length>12?"-"+n.slice(12):""):n}
+$("cnic").addEventListener("input",e=>{let pos=e.target.selectionStart;e.target.value=formatCnic(e.target.value)});
+function nextId(){let d=todayISO().replaceAll("-","");let prefix="BN-"+d+"-";let n=records.filter(r=>r.id.startsWith(prefix)).length+1;while(records.some(r=>r.id===prefix+String(n).padStart(4,"0")))n++;return prefix+String(n).padStart(4,"0")}
+function say(t){$("message").textContent=t}
+function clearForm(){
+ editingId=null;
+ $("formTitle").textContent="Issue New Token";
+ $("saveBtn").textContent="Save Token";
+ ["cnic","name","remarks"].forEach(x=>$(x).value="");
+ $("tehsil").value="Bahawalnagar";
+ $("issuedDate").value=todayISO();
+ $("surveyDate").value="";
+ $("status").value="Token Issued";
+ say("");
+}
+$("clearBtn").onclick=clearForm;
+$("saveBtn").onclick=()=>{
+ const cnic=normCnic($("cnic").value), name=$("name").value.trim(), rawDate=$("surveyDate").value.trim(), issuedDate=$("issuedDate").value;
+ let date="";
+ if(rawDate!==""){
+  if(/^\d{2}-\d{2}-\d{4}$/.test(rawDate)){const [dd,mm,yyyy]=rawDate.split("-");date=`${yyyy}-${mm}-${dd}`;}
+  else if(/^\d{4}-\d{2}-\d{2}$/.test(rawDate)){date=rawDate;}
+  else {say("Date of Visit DD-MM-YYYY format mein likhein, misal 05-11-2026, ya khali chhor dein.");return;}
+ }
+ if(!/^\d{13}$/.test(cnic)){say("Please enter a valid 13-digit CNIC.");return}
+ if(!name){say("Please enter beneficiary name.");return}
+ if(!issuedDate){say("Token Issue Date calendar se select karein.");return}
+ if(date!=="" ){const d=new Date(date+"T00:00:00");if(Number.isNaN(d.getTime())||d.toISOString().slice(0,10)!==date){say("Visit / Survey Date ki valid tareekh select karein ya khali chhor dein.");return}}
+ const duplicate=records.find(r=>normCnic(r.cnic)===cnic&&r.id!==editingId);
+ if(duplicate&&!confirm("This CNIC already exists under "+duplicate.id+". Save another token anyway?")){say("Duplicate CNIC not saved.");return}
+ if(editingId){
+  let r=records.find(x=>x.id===editingId);if(!r)return;
+  Object.assign(r,{cnic:formatCnic(cnic),name,tehsil:$("tehsil").value,issuedDate,surveyDate:date,status:$("status").value,remarks:$("remarks").value.trim(),updatedAt:new Date().toISOString()});
+  say("Record updated. Token ID remains "+r.id);
+ }else{
+  const r={id:nextId(),cnic:formatCnic(cnic),name,tehsil:$("tehsil").value,issuedDate,surveyDate:date,status:$("status").value,remarks:$("remarks").value.trim(),issuedAt:new Date().toISOString(),printCount:0};
+  records.unshift(r);say("Saved token "+r.id+". You can now open its receipt for printing.");
+ }
+ persist();clearForm();
+};
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function render(){
+ $("total").textContent=records.length;
+ $("today").textContent=records.filter(r=>r.issuedAt&&r.issuedAt.slice(0,10)===todayISO()).length;
+ $("pending").textContent=records.filter(r=>["Token Issued","Pending Survey"].includes(r.status)).length;
+ const q=$("search").value.toLowerCase().trim(), ft=$("filterTehsil").value;
+ const list=records.filter(r=>(!ft||r.tehsil===ft)&&(!q||[r.id,r.cnic,r.name,r.tehsil,r.issuedDate,r.surveyDate,r.status,r.remarks].some(v=>String(v||"").toLowerCase().includes(q))));
+ $("records").innerHTML=list.map(r=>`<tr><td><strong>${esc(r.id)}</strong><br><span class="muted">${esc((r.issuedAt||"").replace("T"," ").slice(0,16))}</span></td><td>${esc(r.cnic)}</td><td>${esc(r.name)}</td><td>${esc(r.tehsil)}</td><td>${esc(r.surveyDate)}</td><td><span class="badge">${esc(r.status)}</span></td><td>${esc(r.remarks)}</td><td class="no-print"><button class="small" onclick="printToken('${r.id}')">Print</button><button class="small secondary" onclick="editToken('${r.id}')">Edit Record</button><button class="small secondary" onclick="changeVisitDate('${r.id}')">Edit Visit Date</button><button class="small danger" onclick="deleteToken('${r.id}')">Delete</button></td></tr>`).join("");
+ $("empty").style.display=list.length?"none":"block";
+}
+$("search").addEventListener("input",render);$("filterTehsil").addEventListener("change",render);
+window.editToken=id=>{const r=records.find(x=>x.id===id);if(!r)return;editingId=id;$("formTitle").textContent="Edit "+id;$("saveBtn").textContent="Update Token";$("cnic").value=r.cnic;$("name").value=r.name;$("tehsil").value=r.tehsil;$("issuedDate").value=r.issuedDate||((r.issuedAt||"").slice(0,10))||todayISO();$("surveyDate").value=r.surveyDate?`${r.surveyDate.slice(8,10)}-${r.surveyDate.slice(5,7)}-${r.surveyDate.slice(0,4)}`:"";$("status").value=r.status;$("remarks").value=r.remarks||"";window.scrollTo({top:0,behavior:"smooth"})};
+window.changeVisitDate=id=>{
+ const r=records.find(x=>x.id===id); if(!r)return;
+ const existing=r.surveyDate?`${r.surveyDate.slice(8,10)}-${r.surveyDate.slice(5,7)}-${r.surveyDate.slice(0,4)}`:"";
+ const next=prompt("Date of Visit DD-MM-YYYY, misal 05-11-2026. Khali chhor kar date remove kar sakte hain:",existing);
+ if(next===null)return;
+ const val=next.trim(); let iso="";
+ if(val!==""){
+  if(/^\d{2}-\d{2}-\d{4}$/.test(val)){const [dd,mm,yyyy]=val.split("-");iso=`${yyyy}-${mm}-${dd}`;}
+  else if(/^\d{4}-\d{2}-\d{2}$/.test(val)){iso=val;}
+  else {alert("Date DD-MM-YYYY format mein likhein, misal 05-11-2026.");return;}
+  const d=new Date(iso+"T00:00:00");if(Number.isNaN(d.getTime())||d.toISOString().slice(0,10)!==iso){alert("Valid calendar date enter karein.");return;}
+ }
+ r.surveyDate=iso; r.updatedAt=new Date().toISOString(); persist();
+ alert("Date of Visit update ho gayi.");
+};
+window.deleteToken=id=>{if(confirm("Permanently delete "+id+"? Export a backup first if needed.")){records=records.filter(r=>r.id!==id);persist()}};
+window.printToken=id=>{const r=records.find(x=>x.id===id);if(!r)return;
+ r.printCount=(r.printCount||0)+1;persist();
+ $("receipt").innerHTML=`<h2>BISP SURVEY TOKEN</h2><div style="text-align:center">ضلع بہاولنگر</div><div class="line"></div><b>Token:</b> ${esc(r.id)}<br><b>نام:</b> ${esc(r.name)}<br><b>CNIC:</b> ${esc(r.cnic)}<br><b>تحصیل:</b> ${esc(r.tehsil)}<br><b>تاریخِ اجرا:</b> ${esc(r.issuedDate||"-")}<br><b>تاریخِ وزٹ:</b> ${esc(r.surveyDate||"-")}<br><b>Status:</b> ${esc(r.status)}<br><b>Remarks:</b> ${esc(r.remarks||"-")}<div class="line"></div><div class="qrwrap" id="receiptQr"></div><div class="qrnote">یہ ٹوکن بالکل مفت ہے، اس کی کوئی فیس نہیں ہے۔<br>کسی بھی شکایت کی صورت میں متعلقہ بی آئی ایس پی تحصیل آفس سے رابطہ کریں۔</div>`;
+ const qrTarget=$("receiptQr");
+ if(window.QRCode){new QRCode(qrTarget,{text:r.id,width:150,height:150,correctLevel:QRCode.CorrectLevel.M});}
+ else {qrTarget.textContent="QR library load nahi hui — pehli dafa internet ke saath file kholen.";}
+ window.print();
+};
+function download(name,content,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+$("backup").onclick=()=>download("beneficiary-token-backup-"+todayISO()+".json",JSON.stringify({version:1,exportedAt:new Date().toISOString(),records},null,2),"application/json");
+$("exportCsv").onclick=()=>{const cols=["id","cnic","name","tehsil","issuedDate","issuedAt","surveyDate","status","remarks","printCount"];const quote=v=>'"'+String(v??"").replace(/"/g,'""')+'"';download("beneficiary-microdata-"+todayISO()+".csv",[cols.join(","),...records.map(r=>cols.map(c=>quote(r[c])).join(","))].join("\r\n"),"text/csv;charset=utf-8")};
+$("restoreBtn").onclick=()=>$("restoreFile").click();
+$("restoreFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text()),incoming=Array.isArray(data)?data:data.records;if(!Array.isArray(incoming))throw Error("Invalid backup");if(!confirm("Restore backup? Existing records with the same token ID will be replaced."))return;const map=new Map(records.map(r=>[r.id,r]));incoming.forEach(r=>{if(r&&r.id)map.set(r.id,r)});records=[...map.values()].sort((a,b)=>(b.issuedAt||"").localeCompare(a.issuedAt||""));persist();say("Backup restored.");}catch(err){say("Could not restore: "+err.message)}e.target.value=""};
+$("lookupBtn").onclick=()=>{
+ const id=$("qrLookup").value.trim();
+ const r=records.find(x=>x.id===id);
+ $("lookupResult").textContent=r?`Token ${r.id} — ${r.name} | CNIC ${r.cnic} | ${r.tehsil} | Survey date ${r.surveyDate} | Status ${r.status} | Remarks ${r.remarks||"-"}`:"Token nahi mila. QR se milne wali Token ID bilkul sahi enter karein.";
+};
+$("issuedDate").value=todayISO();
+$("surveyDate").value="";
+load();
+</script>
+</body>
+</html>
